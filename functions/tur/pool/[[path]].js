@@ -37,9 +37,10 @@ async function fetchWithRetry(url, options = {}, attempt = 1) {
 }
 
 // 获取 GitHub URL（primary/fallback）
-async function getPoolUrl(fileName) {
-  const safeName = encodeURIComponent(fileName.replace(/[^a-zA-Z0-9._-]/g, '.'));
-  const packageName = fileName.split("_")[0];
+async function getPoolUrl(packageDebName) {
+  const packageDebNameModified = packageDebName.replaceAll(/[^a-zA-Z0-9-_+%]+/g, ".");
+  const safeName = encodeURI(packageDebNameModified);
+  const packageName = packageDebNameModified.split("_").at(0);
 
   const primaryUrl = `https://github.com/termux-user-repository/dists/releases/download/${packageName}/${safeName}`;
   const fallbackUrl = `https://github.com/termux-user-repository/dists/releases/download/0.1/${safeName}`;
@@ -222,14 +223,15 @@ export async function onRequestGet(context) {
   }
 
   if (path.startsWith(PREFIX + '/pool/') && !path.endsWith('/')) {
-    const fileName = path.split('/').pop();
-    if (!fileName || !fileName.endsWith('.deb')) {
+    const pathArray = path.split('/');
+    const packageDebName = pathArray.at(-1);
+    if (!packageDebName || !packageDebName.endsWith('.deb')) {
       return new Response("Not Found", { status: 404 });
     }
     try {
       const country = (request.cf && request.cf.country) || '';
       const isCFAllowed = CF_ALLOWED_COUNTRIES.includes(country);
-      const mainUrl = await getPoolUrl(fileName);
+      const mainUrl = await getPoolUrl(packageDebName);
       if (!isCFAllowed) {
         return new Response(null, { status: 302, headers: { Location: mainUrl } });
       }
@@ -269,14 +271,15 @@ export async function onRequestHead(context) {
   }
 
   if (path.startsWith(PREFIX + '/pool/') && !path.endsWith('/')) {
-    const fileName = path.split('/').pop();
-    if (!fileName || !fileName.endsWith('.deb')) {
+    const pathArray = path.split('/');
+    const packageDebName = pathArray.at(-1);
+    if (!packageDebName || !packageDebName.endsWith('.deb')) {
       return new Response("Not Found", { status: 404 });
     }
     try {
       const country = (request.cf && request.cf.country) || '';
       const isCFAllowed = CF_ALLOWED_COUNTRIES.includes(country);
-      const mainUrl = await getPoolUrl(fileName);
+      const mainUrl = await getPoolUrl(packageDebName);
       if (!isCFAllowed) {
         return new Response(null, { status: 302, headers: { Location: mainUrl } });
       } else {
