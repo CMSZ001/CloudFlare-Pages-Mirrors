@@ -141,24 +141,6 @@ async function fetchAndStream(url, request, context) {
   return response;
 }
 
-// CN: 当请求为 Range 时进行后台预热，提升后续完整下载命中率
-function prewarmEdgeCache(url, request, context) {
-  const forward = new Headers();
-  ['accept','user-agent'].forEach(k => {
-    const v = request.headers.get(k);
-    if (v) forward.set(k, v);
-  });
-  context.waitUntil((async () => {
-    try {
-      await fetchWithRetry(url, {
-        cf: { cacheEverything: true, cacheTtl: ONE_YEAR_SECONDS },
-        headers: forward,
-        method: 'GET',
-        timeoutMs: 0
-      });
-    } catch (_) {}
-  })());
-}
 
 function pageSanitizeHeaders(src) {
   const h = new Headers(src);
@@ -234,9 +216,6 @@ export async function onRequestGet(context) {
       const mainUrl = await getPoolUrl(packageDebName);
       if (!isCFAllowed) {
         return new Response(null, { status: 302, headers: { Location: mainUrl } });
-      }
-      if (!!request.headers.get('range')) {
-        prewarmEdgeCache(mainUrl, request, context);
       }
       return fetchAndStream(mainUrl, request, context);
     } catch (err) {
