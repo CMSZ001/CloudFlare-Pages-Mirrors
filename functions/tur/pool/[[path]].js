@@ -152,7 +152,7 @@ function pageSecurity(src) {
   h.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   h.set('X-Frame-Options', 'DENY');
   h.set('X-XSS-Protection', '1; mode=block');
-  h.set('Content-Security-Policy', "default-src 'self' https://tur-mirror.pages.dev; script-src 'self' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://tur-mirror.pages.dev data:; frame-ancestors 'none'; base-uri 'none'");
+  h.set('Content-Security-Policy', "default-src 'self' https://cmsz001.github.io/tur-mirror/; script-src 'self' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://cmsz001.github.io/tur-mirror/ data:; frame-ancestors 'none'; base-uri 'none'");
   h.set('Referrer-Policy', 'no-referrer');
   return h;
 }
@@ -227,7 +227,7 @@ export async function onRequestGet(context) {
   }
   if (path.startsWith(PREFIX + '/pool/') && path.endsWith('/')) {
     const upstreamPath = path.replace(new RegExp(`^${PREFIX}`), "");
-    const mirrorUrl = `https://tur-mirror.pages.dev${upstreamPath}`;
+    const mirrorUrl = `https://cmsz001.github.io/tur-mirror${upstreamPath}`;
     try {
       return await fetchMirrorPage(mirrorUrl, request, context);
     } catch (err) {
@@ -281,7 +281,7 @@ export async function onRequestHead(context) {
   }
   if (path.startsWith(PREFIX + '/pool/') && path.endsWith('/')) {
     const upstreamPath = path.replace(new RegExp(`^${PREFIX}`), "");
-    const mirrorUrl = `https://tur-mirror.pages.dev${upstreamPath}`;
+    const mirrorUrl = `https://cmsz001.github.io/tur-mirror${upstreamPath}`;
     try {
       const response = await fetchWithRetry(mirrorUrl, { method: "HEAD" });
       return new Response(null, {

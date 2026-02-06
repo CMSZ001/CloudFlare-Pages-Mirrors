@@ -56,7 +56,7 @@ function withSecurity(src, allowMirror) {
   h.set('X-Frame-Options', 'DENY');
   h.set('X-XSS-Protection', '1; mode=block');
   h.set('Content-Security-Policy', allowMirror
-    ? "default-src 'self' https://tur-mirror.pages.dev; script-src 'self' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://tur-mirror.pages.dev data:; frame-ancestors 'none'; base-uri 'none'"
+    ? "default-src 'self' https://cmsz001.github.io/tur-mirror/; script-src 'self' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://cmsz001.github.io/tur-mirror/ data:; frame-ancestors 'none'; base-uri 'none'"
     : "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
   );
   h.set('Referrer-Policy', 'no-referrer');
@@ -67,7 +67,7 @@ function buildUpstreamUrl(upstreamPath) {
   if (isFilePath(upstreamPath)) {
     return `https://raw.githubusercontent.com/termux-user-repository/dists/refs/heads/master${upstreamPath}`;
   }
-  return `https://tur-mirror.pages.dev${upstreamPath}`;
+  return `https://https://cmsz001.github.io/tur-mirror${upstreamPath}`;
 }
 
 async function fetchAndStream(upstreamUrl, request, context) {
