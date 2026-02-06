@@ -194,6 +194,9 @@ export async function onRequestGet(context) {
   const url = new URL(request.url);
   const path = url.pathname;
 
+  if (request.headers.get('checkmode')) {
+    return new Response("ITDOG filter", { status: 500 });
+  }
   if (request.method !== 'GET') {
     return new Response("Method Not Allowed", { status: 405 });
   }
@@ -239,6 +242,9 @@ export async function onRequestHead(context) {
   const url = new URL(request.url);
   const path = url.pathname;
 
+  if (request.headers.get('checkmode')) {
+    return new Response("ITDOG filter", { status: 500 });
+  }
   if (request.method !== 'HEAD') {
     return new Response("Method Not Allowed", { status: 405 });
   }
