@@ -1,0 +1,20 @@
+name: Cloudflare Pages Deploy
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+permissions:
+  contents: read
+  deployments: write
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: pages deploy . --project-name=mirror --branch=main
