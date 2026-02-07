@@ -1,10 +1,11 @@
 const PREFIX = '/tur';
 const MAX_RETRIES = 3;
-const RETRY_DELAY_BASE = 3000;
-const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60;
+const RETRY_DELAY_BASE = 1000;
 const TIMEOUT_MS = 30000;
-const CACHE_TTL_SECONDS = 900;
+const CACHE_TTL_SECONDS = 3600;
 const HEAD_TIMEOUT_MS = 3000;
+const DEB_CACHE_TTL_SECONDS = 1800;
+const CF_DEB_CACHE_TTL_SECONDS = 31536000;
 const CF_ALLOWED_COUNTRIES = ['CN'];
 
 // fetch 带重试
@@ -16,7 +17,7 @@ async function fetchWithRetry(url, options = {}, attempt = 1) {
   const timer = timeoutMs > 0 ? setTimeout(() => controller.abort("timeout"), timeoutMs) : null;
   try {
     if (method === 'HEAD') {
-      return await fetch(url, { ...options, signal: controller ? controller.signal : undefined });
+      return await fetch(url, options);
     } else {
       const response = await fetch(url, { ...options, signal: controller ? controller.signal : undefined });
       if (!response.ok && attempt < MAX_RETRIES) {
@@ -72,7 +73,7 @@ async function fetchAndStream(url, request, context) {
   const isDebReq = url.endsWith(".deb");
   const hasRangeReq = !!request.headers.get('range');
   const response = await fetchWithRetry(url, {
-    cf: (!hasRangeReq && isGetReq && isDebReq) ? { cacheEverything: true, cacheTtl: ONE_YEAR_SECONDS } : undefined,
+    cf: (!hasRangeReq && isGetReq && isDebReq) ? { cacheEverything: true, cacheTtl: CF_DEB_CACHE_TTL_SECONDS } : undefined,
     headers: forward,
     method: request.method,
     timeoutMs: isGetReq && isDebReq ? 0 : TIMEOUT_MS
@@ -113,9 +114,8 @@ async function fetchAndStream(url, request, context) {
   if (isGet && isDeb && shouldCache) {
     const [clientStream, cacheStream] = response.body.tee();
 
-    // 返回给客户端
     const clientHeaders = withSecurity(sanitizeHeaders(response.headers));
-    clientHeaders.set("Cache-Control", `public, max-age=${ONE_YEAR_SECONDS}`);
+    clientHeaders.set("Cache-Control", `public, max-age=${DEB_CACHE_TTL_SECONDS}`);
     const clientResponse = new Response(clientStream, {
       status: response.status,
       statusText: response.statusText,
@@ -123,7 +123,7 @@ async function fetchAndStream(url, request, context) {
     });
 
     const cacheHeaders = withSecurity(sanitizeHeaders(response.headers));
-    cacheHeaders.set("Cache-Control", `public, max-age=${ONE_YEAR_SECONDS}`);
+    cacheHeaders.set("Cache-Control", `public, max-age=${DEB_CACHE_TTL_SECONDS}`);
     const cacheResponse = new Response(cacheStream, {
       status: response.status,
       statusText: response.statusText,
@@ -194,9 +194,6 @@ export async function onRequestGet(context) {
   const url = new URL(request.url);
   const path = url.pathname;
 
-  if (request.headers.get('checkmode')) {
-    return new Response("ITDOG filter", { status: 500 });
-  }
   if (request.method !== 'GET') {
     return new Response("Method Not Allowed", { status: 405 });
   }
@@ -214,12 +211,7 @@ export async function onRequestGet(context) {
       return new Response("Not Found", { status: 404 });
     }
     try {
-      const country = (request.cf && request.cf.country) || '';
-      const isCFAllowed = CF_ALLOWED_COUNTRIES.includes(country);
       const mainUrl = await getPoolUrl(packageDebName);
-      if (!isCFAllowed) {
-        return new Response(null, { status: 302, headers: { Location: mainUrl } });
-      }
       return fetchAndStream(mainUrl, request, context);
     } catch (err) {
       return new Response("All pool upstreams failed: " + err, { status: 502 });
@@ -242,9 +234,6 @@ export async function onRequestHead(context) {
   const url = new URL(request.url);
   const path = url.pathname;
 
-  if (request.headers.get('checkmode')) {
-    return new Response("ITDOG filter", { status: 500 });
-  }
   if (request.method !== 'HEAD') {
     return new Response("Method Not Allowed", { status: 405 });
   }
@@ -262,19 +251,13 @@ export async function onRequestHead(context) {
       return new Response("Not Found", { status: 404 });
     }
     try {
-      const country = (request.cf && request.cf.country) || '';
-      const isCFAllowed = CF_ALLOWED_COUNTRIES.includes(country);
       const mainUrl = await getPoolUrl(packageDebName);
-      if (!isCFAllowed) {
-        return new Response(null, { status: 302, headers: { Location: mainUrl } });
-      } else {
-        const response = await fetchWithRetry(mainUrl, { method: "HEAD" });
-        return new Response(null, {
-          status: response.status,
-          statusText: response.statusText,
-          headers: pageSecurity(pageSanitizeHeaders(response.headers))
-        });
-      }
+      const response = await fetchWithRetry(mainUrl, { method: "HEAD" });
+      return new Response(null, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: pageSecurity(pageSanitizeHeaders(response.headers))
+      });
     } catch (err) {
       return new Response("All pool upstreams failed: " + err, { status: 502 });
     }

@@ -2,7 +2,7 @@ const PREFIX = '/tur';
 const MAX_RETRIES = 3;
 const RETRY_DELAY_BASE = 1000;
 const TIMEOUT_MS = 30000;
-const CACHE_TTL_SECONDS = 900;
+const CACHE_TTL_SECONDS = 3600;
 const HEAD_TIMEOUT_MS = 3000;
 
 /**
@@ -67,7 +67,7 @@ function buildUpstreamUrl(upstreamPath) {
   if (isFilePath(upstreamPath)) {
     return `https://raw.githubusercontent.com/termux-user-repository/dists/refs/heads/master${upstreamPath}`;
   }
-  return `https://https://cmsz001.github.io/tur-mirror${upstreamPath}`;
+  return `https://cmsz001.github.io/tur-mirror${upstreamPath}`;
 }
 
 async function fetchAndStream(upstreamUrl, request, context) {
@@ -148,7 +148,6 @@ export async function onRequestGet(context) {
   const url = new URL(request.url);
   const path = url.pathname;
 
-  if (request.headers.get('checkmode')) return new Response("ITDOG filter", { status: 500 });
   if (request.method !== 'GET') return new Response("Method Not Allowed", { status: 405 });
   if (path.length > 2048) return new Response("URI Too Long", { status: 414 });
   if (path.includes("..")) return new Response("Bad Request", { status: 400 });
@@ -167,7 +166,6 @@ export async function onRequestHead(context) {
   const url = new URL(request.url);
   const path = url.pathname;
 
-  if (request.headers.get('checkmode')) return new Response("ITDOG filter", { status: 500 });
   if (request.method !== 'HEAD') return new Response("Method Not Allowed", { status: 405 });
   if (path.length > 2048) return new Response("URI Too Long", { status: 414 });
   if (path.includes("..")) return new Response("Bad Request", { status: 400 });
